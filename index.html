@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SW Mühle - Deluxe Dark Mode</title>
+    <!-- PeerJS stabile Version -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #120a1f;
+            --panel-bg: #1c1130;
+            --accent-gold: #f39c12;
+            --accent-orange: #e67e22;
+            --text-main: #f0e6ff;
+            --text-muted: #b19cd9;
+            --board-lines: #2c1a0e;
+            --board-bg: #c89d68;
+            --board-border: #8b5a2b;
+        }
+
+        /* Brett-Themes */
+        body.theme-wood {
+            --board-bg: #d2a679;
+            --board-lines: #3d2314;
+            --board-border: #8b5a2b;
+        }
+        body.theme-darkwood {
+            --board-bg: #3e2723;
+            --board-lines: #d7ccc8;
+            --board-border: #5d4037;
+        }
+        body.theme-modern {
+            --board-bg: #160d26;
+            --board-lines: #4a3575;
+            --board-border: #332159;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 8px 0;
+            color: var(--accent-gold);
+            text-align: center;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 500px;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .card {
+            background-color: var(--panel-bg);
+            border: 1px solid #332159;
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+            color: #120a1f;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4);
+            transition: transform 0.1s, filter 0.2s;
+            width: 100%;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+            filter: brightness(0.9);
+        }
+
+        .btn-secondary {
+            background: #2c1a4d;
+            color: var(--text-main);
+            border: 1px solid var(--board-border);
+            box-shadow: none;
+        }
+
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+            display: none;
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+            display: none;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            background: #120a1f;
+            border: 2px solid #332159;
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+        }
+        input[type="text"]:focus, select:focus {
+            border-color: var(--accent-gold);
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: left;
+            margin-bottom: -10px;
+        }
+
+        #game-board-container {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 420px;
+            background: var(--board-bg);
+            border-radius: 16px;
+            border: 4px solid var(--board-border);
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3), 0 8px 25px rgba(0,0,0,0.5);
+            touch-action: none;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+        }
+
+        .status-bar {
+            background-color: var(--panel-bg);
+            border: 1px solid #332159;
+            border-radius: 12px;
+            padding: 10px 15px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mini-stone {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+
+        /* Link-Anzeige Box */
+        #link-box-container {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            background: #120a1f;
+            border: 1px solid var(--accent-gold);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        /* Chat & Emoji Bereich */
+        .chat-container {
+            background-color: var(--panel-bg);
+            border: 1px solid #332159;
+            border-radius: 12px;
+            padding: 8px 12px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .emoji-row {
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.4rem;
+        }
+
+        .emoji-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            transition: transform 0.1s;
+        }
+        .emoji-btn:active {
+            transform: scale(1.3);
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .chat-input-row input {
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            border-radius: 8px;
+        }
+
+        .chat-send-btn {
+            background: #2c1a4d;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            padding: 0 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Sprechblasen-Overlay */
+        #chat-bubble {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(28, 17, 48, 0.95);
+            border: 2px solid var(--accent-gold);
+            color: var(--text-main);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            max-width: 90%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="theme-wood">
+
+    <h1>SW Mühle</h1>
+
+    <!-- STARTBILDSCHIRM -->
+    <div id="screen-menu" class="screen active">
+        <div class="card">
+            <h2 style="color: var(--text-main); font-size: 1.2rem;">Spieler-Profil</h2>
+            <label>Dein Name:</label>
+            <input type="text" id="player-name-input" value="Stefan" placeholder="Name eingeben...">
+            
+            <label>Brett-Design:</label>
+            <select id="board-theme-select" onchange="changeTheme(this.value)">
+                <option value="theme-wood">Holz-Klassik (Hell)</option>
+                <option value="theme-darkwood">Dunkles Holz (Rustikal)</option>
+                <option value="theme-modern">Modern (Dunkel)</option>
+            </select>
+        </div>
+
+        <div class="card">
+            <h2 style="color: var(--text-main); font-size: 1.2rem;">Spielmodus wählen</h2>
+            <button class="btn" onclick="showScreen('screen-ai-setup')">🤖 Gegen KI spielen</button>
+            <button class="btn btn-secondary" onclick="showScreen('screen-wifi-host')">Online Mehrspieler (Host)</button>
+            <button class="btn btn-secondary" onclick="showScreen('screen-wifi-join')">Online Mehrspieler (Beitreten)</button>
+            <button class="btn btn-secondary" onclick="startLocalGame()">Lokaler Modus (1 Gerät)</button>
+        </div>
+    </div>
+
+    <!-- KI SETUP BILDSCHIRM -->
+    <div id="screen-ai-setup" class="screen">
+        <div class="card">
+            <h3 style="font-size: 1.1rem;">Computer-Gegner Einstellungen</h3>
+            
+            <label>Schwierigkeit:</label>
+            <select id="ai-difficulty-select">
+                <option value="easy">Leicht (Zufall)</option>
+                <option value="medium" selected>Mittel (Taktisch)</option>
+                <option value="hard">Schwer (Clever)</option>
+            </select>
+
+            <button class="btn" onclick="startAiGame()">Spiel starten</button>
+            <button class="btn btn-secondary" onclick="showScreen('screen-menu')">Zurück</button>
+        </div>
+    </div>
+
+    <!-- HOST BILDSCHIRM -->
+    <div id="screen-wifi-host" class="screen">
+        <div class="card">
+            <h3 style="font-size: 1.1rem;">Online-Raum erstellen</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Raumcode:</p>
+            <input type="text" id="host-room-input" value="123">
+            <button class="btn" onclick="startHosting()">Raum öffnen & Link generieren</button>
+            <p id="host-status" style="font-size: 0.85rem; color: var(--accent-gold);"></p>
+            
+            <!-- ANZEIGE-BOX FÜR DEN GENERIERTEN LINK -->
+            <div id="link-box-container">
+                <label style="font-size: 0.8rem; color: var(--accent-gold);">Dein Einladungs-Link:</label>
+                <input type="text" id="generated-invite-link" readonly onclick="this.select()" style="font-size: 0.8rem; background: #1c1130; cursor: pointer;" title="Klicken zum Markieren">
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem;" onclick="copyInviteLink()">📋 Link kopieren</button>
+            </div>
+
+            <!-- WhatsApp Einladungs-Button -->
+            <button id="whatsapp-share-btn" class="btn btn-whatsapp" onclick="shareViaWhatsApp()">📲 Per WhatsApp einladen</button>
+
+            <div id="host-lobby-controls" style="display:none; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <button class="btn" style="background: linear-gradient(135deg, #27ae60, #2ecc71); color: #fff;" onclick="rollWhoStarts()">🎲 Wer fängt an? (Auslosung)</button>
+                <p id="draw-status" style="font-size: 0.9rem; color: var(--accent-gold); font-weight: bold;"></p>
+            </div>
+
+            <button class="btn btn-secondary" onclick="showScreen('screen-menu')">Zurück</button>
+        </div>
+    </div>
+
+    <!-- BEITRETEN BILDSCHIRM -->
+    <div id="screen-wifi-join" class="screen">
+        <div class="card">
+            <h3 style="font-size: 1.1rem;">Spiel beitreten</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Gib den Raumcode ein:</p>
+            <input type="text" id="join-room-input" placeholder="Raumcode eingeben...">
+            <button class="btn" onclick="joinGame()">Verbinden</button>
+            <p id="join-status" style="font-size: 0.85rem; color: var(--accent-gold);"></p>
+            
+            <div id="join-lobby-controls" style="display:none; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <p id="join-draw-status" style="font-size: 0.9rem; color: var(--accent-gold); font-weight: bold;">Warte auf Startspieler-Auslosung durch Host...</p>
+            </div>
+
+            <button class="btn btn-secondary" onclick="showScreen('screen-menu')">Zurück</button>
+        </div>
+    </div>
+
+    <!-- SPIELBILDSCHIRM -->
+    <div id="screen-game" class="screen">
+        <div class="status-bar">
+            <div class="player-info">
+                <div class="mini-stone" id="p1-indicator" style="background: #000000; border: 1px solid #444;"></div>
+                <span id="p1-text">Host: 9</span>
+            </div>
+            <div id="game-phase-text" style="font-weight: bold; color: var(--accent-gold); font-size: 0.85rem;">Setzen</div>
+            <div class="player-info">
+                <div class="mini-stone" id="p2-indicator" style="background: #ffffff; border: 1px solid #aaa;"></div>
+                <span id="p2-text">Gast: 9</span>
+            </div>
+        </div>
+
+        <div id="game-board-container">
+            <div id="chat-bubble">Nachricht...</div>
+            <svg viewBox="0 0 400 400" id="board-svg" onpointerdown="handleBoardClick(event)" onpointermove="handleBoardHover(event)" onpointerleave="clearHover()">
+                <rect x="40" y="40" width="320" height="320" fill="none" stroke="var(--board-lines)" stroke-width="4"/>
+                <rect x="100" y="100" width="200" height="200" fill="none" stroke="var(--board-lines)" stroke-width="4"/>
+                <rect x="160" y="160" width="80" height="80" fill="none" stroke="var(--board-lines)" stroke-width="4"/>
+                <line x1="200" y1="40" x2="200" y2="160" stroke="var(--board-lines)" stroke-width="4"/>
+                <line x1="200" y1="240" x2="200" y2="360" stroke="var(--board-lines)" stroke-width="4"/>
+                <line x1="40" y1="200" x2="160" y2="200" stroke="var(--board-lines)" stroke-width="4"/>
+                <line x1="240" y1="200" x2="360" y2="200" stroke="var(--board-lines)" stroke-width="4"/>
+            </svg>
+        </div>
+
+        <div id="turn-indicator" style="font-size: 1.05rem; font-weight: bold; color: var(--accent-gold); text-align: center; min-height: 25px;">
+            Spieler ist am Zug
+        </div>
+
+        <!-- EMOJI & CHAT LEISTE -->
+        <div id="chat-container-box" class="chat-container">
+            <div class="emoji-row">
+                <button class="emoji-btn" onclick="sendChatMessage('👍')">👍</button>
+                <button class="emoji-btn" onclick="sendChatMessage('😂')">😂</button>
+                <button class="emoji-btn" onclick="sendChatMessage('🤔')">🤔</button>
+                <button class="emoji-btn" onclick="sendChatMessage('🔥')">🔥</button>
+                <button class="emoji-btn" onclick="sendChatMessage('😱')">😱</button>
+                <button class="emoji-btn" onclick="sendChatMessage('😎')">😎</button>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" id="chat-msg-input" placeholder="Nachricht senden..." maxlength="40" onkeydown="if(event.key==='Enter') sendCustomChat()">
+                <button class="chat-send-btn" onclick="sendCustomChat()">Senden</button>
+            </div>
+        </div>
+
+        <button id="restart-btn" class="btn btn-restart" onclick="triggerRestart()">🔄 Nochmal spielen</button>
+        <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem;" onclick="confirmLeaveGame()">Spiel verlassen</button>
+    </div>
+
+    <script>
+        let playerName = "Stefan";
+        let hoveredPointIdx = -1;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomFromUrl = urlParams.get('room');
+            if (roomFromUrl) {
+                document.getElementById('join-room-input').value = roomFromUrl;
+                showScreen('screen-wifi-join');
+            }
+        });
+
+        function changeTheme(themeClass) {
+            document.body.className = themeClass;
+        }
+
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                if (type === 'click') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'glock') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(1046.50, now);
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'dingdong') {
+                    const osc1 = audioCtx.createOscillator();
+                    const gain1 = audioCtx.createGain();
+                    osc1.type = 'sine';
+                    osc1.frequency.setValueAtTime(783.99, now);
+                    gain1.gain.setValueAtTime(0.25, now);
+                    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc1.connect(gain1);
+                    gain1.connect(audioCtx.destination);
+                    osc1.start(now);
+                    osc1.stop(now + 0.4);
+
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(523.25, now + 0.35);
+                    gain2.gain.setValueAtTime(0.25, now + 0.35);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.start(now + 0.35);
+                    osc2.stop(now + 0.8);
+                }
+            } catch (e) {}
+        }
+
+        const points = [
+            {x: 40, y: 40}, {x: 200, y: 40}, {x: 360, y: 40},
+            {x: 100, y: 100}, {x: 200, y: 100}, {x: 300, y: 100},
+            {x: 160, y: 160}, {x: 200, y: 160}, {x: 240, y: 160},
+            {x: 40, y: 200}, {x: 100, y: 200}, {x: 160, y: 200}, {x: 240, y: 200}, {x: 300, y: 200}, {x: 360, y: 200},
+            {x: 160, y: 240}, {x: 200, y: 240}, {x: 240, y: 240},
+            {x: 100, y: 300}, {x: 200, y: 300}, {x: 300, y: 300},
+            {x: 40, y: 360}, {x: 200, y: 360}, {x: 360, y: 360}
+        ];
+
+        const adjacencies = {
+            0: [1, 9], 1: [0, 2, 4], 2: [1, 14],
+            3: [4, 10], 4: [1, 3, 5, 7], 5: [4, 13],
+            6: [7, 11], 7: [4, 6, 8], 8: [7, 12],
+            9: [0, 10, 21], 10: [3, 9, 11, 18], 11: [6, 10, 15],
+            12: [8, 13, 17], 13: [5, 12, 14, 20], 14: [2, 13, 23],
+            15: [11, 16], 16: [15, 17, 19], 17: [12, 16],
+            18: [10, 19], 19: [16, 18, 20, 22], 20: [13, 19],
+            21: [9, 22], 22: [19, 21, 23], 23: [14, 22]
+        };
+
+        const mills = [
+            [0,1,2], [3,4,5], [6,7,8], [15,16,17], [18,19,20], [21,22,23],
+            [0,9,21], [3,10,18], [6,11,15], [8,12,17], [5,13,20], [2,14,23],
+            [1,4,7], [16,19,22], [9,10,11], [12,13,14]
+        ];
+
+        let gameState = {
+            board: Array(24).fill(null),
+            phase: 'place',
+            turn: 1,
+            p1PiecesInHand: 9,
+            p2PiecesInHand: 9,
+            p1OnBoard: 0,
+            p2OnBoard: 0,
+            selectedPoint: null,
+            myPlayer: 1,
+            isMultiplayer: false,
+            isVsAi: false,
+            aiDifficulty: 'medium',
+            winner: null,
+            names: { 1: "Host", 2: "Gast" }
+        };
+
+        let peer = null;
+        let conn = null;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            playerName = document.getElementById('player-name-input').value.trim() || "Spieler";
+        }
+
+        function confirmLeaveGame() {
+            if (confirm("Möchtest du das Spiel wirklich verlassen?")) {
+                if (conn) { try { conn.close(); } catch(e) {} }
+                showScreen('screen-menu');
+            }
+        }
+
+        function startLocalGame() {
+            initAudio();
+            gameState.isMultiplayer = false;
+            gameState.isVsAi = false;
+            gameState.myPlayer = 1;
+            gameState.names = { 1: playerName, 2: "Lokaler Gast" };
+            gameState.turn = Math.random() < 0.5 ? 1 : 2;
+            document.getElementById('chat-container-box').style.display = 'none';
+            resetGameDataKeepTurn();
+            showScreen('screen-game');
+            renderBoard();
+        }
+
+        function startAiGame() {
+            initAudio();
+            gameState.isMultiplayer = false;
+            gameState.isVsAi = true;
+            gameState.myPlayer = 1;
+            gameState.aiDifficulty = document.getElementById('ai-difficulty-select').value;
+            gameState.names = { 1: playerName, 2: "Computer KI" };
+            gameState.turn = Math.random() < 0.5 ? 1 : 2;
+            document.getElementById('chat-container-box').style.display = 'none';
+            resetGameDataKeepTurn();
+            showScreen('screen-game');
+            renderBoard();
+            checkAiTurn();
+        }
+
+        function resetGameDataKeepTurn() {
+            const currentTurn = gameState.turn;
+            gameState.board = Array(24).fill(null);
+            gameState.phase = 'place';
+            gameState.turn = currentTurn === 1 ? 2 : 1; 
+            gameState.p1PiecesInHand = 9;
+            gameState.p2PiecesInHand = 9;
+            gameState.p1OnBoard = 0;
+            gameState.p2OnBoard = 0;
+            gameState.selectedPoint = null;
+            gameState.winner = null;
+        }
+
+        function triggerRestart() {
+            resetGameDataKeepTurn();
+            renderBoard();
+            if (gameState.isMultiplayer) sendState();
+            else if (gameState.isVsAi) checkAiTurn();
+        }
+
+        function sendChatMessage(text) {
+            showChatBubble(playerName + ": " + text);
+            if (gameState.isMultiplayer && conn && conn.open) {
+                conn.send(JSON.stringify({ type: 'chat', name: playerName, text: text }));
+            }
+        }
+
+        function sendCustomChat() {
+            const input = document.getElementById('chat-msg-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            sendChatMessage(text);
+        }
+
+        let bubbleTimeout = null;
+        function showChatBubble(message) {
+            const bubble = document.getElementById('chat-bubble');
+            bubble.innerText = message;
+            bubble.style.opacity = '1';
+            if (bubbleTimeout) clearTimeout(bubbleTimeout);
+            bubbleTimeout = setTimeout(() => { bubble.style.opacity = '0'; }, 3500);
+        }
+
+        // HIER WIRD DER LINK GENERIERT UND ANGEZEIGT
+        function getInviteUrl() {
+            const customCode = document.getElementById('host-room-input').value.trim();
+            
+            // AUTOMATISCHE ERKENNUNG: Wenn du es auf GitHub Pages hochlädst, nimmt er automatisch die GitHub-URL.
+            // Falls du den Link auf GitHub manuell erzwingen willst, kannst du hier deine URL eintragen (z.B. "https://dein-name.github.io/repo/SW%20M%C3%BChle2.html")
+            const githubPagesUrl = ""; 
+
+            let baseUrl = (githubPagesUrl.trim() !== "") ? githubPagesUrl : window.location.href.split('?')[0];
+            return `${baseUrl}?room=${encodeURIComponent(customCode)}`;
+        }
+
+        function startHosting() {
+            initAudio();
+            const customCode = document.getElementById('host-room-input').value.trim();
+            if (!customCode) return alert('Bitte gib einen Raumcode ein!');
+
+            document.getElementById('host-status').innerText = 'Erstelle Raum...';
+
+            if (peer) peer.destroy();
+            peer = new Peer('sw-muehle-app-' + customCode);
+
+            peer.on('open', () => {
+                document.getElementById('host-status').innerText = `Raum bereit! Mitspieler kann beitreten.`;
+                
+                // Link anzeigen
+                const fullLink = getInviteUrl();
+                document.getElementById('generated-invite-link').value = fullLink;
+                document.getElementById('link-box-container').style.display = 'flex';
+                document.getElementById('whatsapp-share-btn').style.display = 'block';
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    alert('Dieser Raumcode ist bereits vergeben. Wähle einen anderen!');
+                    document.getElementById('host-status').innerText = 'Code vergeben.';
+                } else {
+                    document.getElementById('host-status').innerText = 'Fehler: ' + err.type;
+                }
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnectionEvents();
+                
+                conn.on('open', () => {
+                    gameState.isMultiplayer = true;
+                    gameState.isVsAi = false;
+                    gameState.myPlayer = 1;
+                    gameState.names[1] = playerName;
+                    document.getElementById('chat-container-box').style.display = 'flex';
+                    
+                    conn.send(JSON.stringify({ type: 'name', name: playerName }));
+                    
+                    document.getElementById('host-status').innerText = `Mitspieler verbunden!`;
+                    document.getElementById('host-lobby-controls').style.display = 'flex';
+                });
+            });
+        }
+
+        function copyInviteLink() {
+            const linkInput = document.getElementById('generated-invite-link');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); // Für Smartphones
+            navigator.clipboard.writeText(linkInput.value).then(() => {
+                alert('Link in die Zwischenablage kopiert!');
+            }).catch(err => {
+                alert('Kopieren fehlgeschlagen. Bitte manuell markieren.');
+            });
+        }
+
+        function shareViaWhatsApp() {
+            const inviteUrl = getInviteUrl();
+            const message = `Lass uns eine Runde Mühle spielen! Klicke einfach auf den Link, um direkt in meinen Raum beizutreten:\n${inviteUrl}`;
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function joinGame() {
+            initAudio();
+            const customCode = document.getElementById('join-room-input').value.trim();
+            if (!customCode) return alert('Bitte gib den Raumcode ein!');
+
+            document.getElementById('join-status').innerText = 'Verbinde mit Host...';
+
+            if (peer) peer.destroy();
+            peer = new Peer();
+
+            peer.on('open', () => {
+                conn = peer.connect('sw-muehle-app-' + customCode, { reliable: true });
+                setupConnectionEvents();
+
+                conn.on('open', () => {
+                    gameState.isMultiplayer = true;
+                    gameState.isVsAi = false;
+                    gameState.myPlayer = 2;
+                    gameState.names[2] = playerName;
+                    document.getElementById('chat-container-box').style.display = 'flex';
+
+                    conn.send(JSON.stringify({ type: 'name', name: playerName }));
+
+                    document.getElementById('join-status').innerText = 'Mit Host verbunden!';
+                    document.getElementById('join-lobby-controls').style.display = 'flex';
+                });
+            });
+
+            peer.on('error', (err) => {
+                document.getElementById('join-status').innerText = 'Verbindung fehlgeschlagen!';
+                alert('Raum nicht gefunden oder offline.');
+            });
+        }
+
+        function rollWhoStarts() {
+            const firstPlayer = Math.random() < 0.5 ? 1 : 2;
+            gameState.turn = firstPlayer;
+            const starterName = gameState.names[firstPlayer];
+            document.getElementById('draw-status').innerText = `🎲 Gewählt: ${starterName} fängt an!`;
+
+            if (conn && conn.open) {
+                conn.send(JSON.stringify({ type: 'start_decision', turn: firstPlayer, names: gameState.names }));
+            }
+
+            setTimeout(() => {
+                resetGameDataKeepTurn();
+                showScreen('screen-game');
+                renderBoard();
+                sendState();
+            }, 1200);
+        }
+
+        function setupConnectionEvents() {
+            conn.on('data', (rawMessage) => {
+                try {
+                    const data = typeof rawMessage === 'string' ? JSON.parse(rawMessage) : rawMessage;
+                    if (data.type === 'action') {
+                        const myPlayerRole = gameState.myPlayer;
+                        const isMultiplayerMode = gameState.isMultiplayer;
+                        const savedNames = gameState.names;
+                        gameState = data.state;
+                        gameState.myPlayer = myPlayerRole;
+                        gameState.isMultiplayer = isMultiplayerMode;
+                        gameState.names = savedNames;
+                        renderBoard();
+                    } else if (data.type === 'name') {
+                        const remotePlayerNum = gameState.myPlayer === 1 ? 2 : 1;
+                        gameState.names[remotePlayerNum] = data.name;
+                    } else if (data.type === 'start_decision') {
+                        gameState.turn = data.turn;
+                        gameState.names = data.names;
+                        const starterName = gameState.names[data.turn];
+                        document.getElementById('join-draw-status').innerText = `🎲 ${starterName} wurde ausgelost und fängt an!`;
+                        setTimeout(() => {
+                            resetGameDataKeepTurn();
+                            showScreen('screen-game');
+                            renderBoard();
+                        }, 1200);
+                    } else if (data.type === 'chat') {
+                        showChatBubble(data.name + ": " + data.text);
+                    }
+                } catch (e) {}
+            });
+
+            conn.on('close', () => {
+                alert('Die Verbindung wurde getrennt.');
+                showScreen('screen-menu');
+            });
+        }
+
+        function sendState() {
+            if (gameState.isMultiplayer && conn && conn.open) {
+                conn.send(JSON.stringify({ type: 'action', state: gameState }));
+            }
+        }
+
+        function updateGamePhase() {
+            if (gameState.p1PiecesInHand === 0 && gameState.p2PiecesInHand === 0) {
+                const nextPlayerOnBoard = gameState.turn === 1 ? gameState.p1OnBoard : gameState.p2OnBoard;
+                if (nextPlayerOnBoard <= 3) gameState.phase = 'fly';
+                else gameState.phase = 'move';
+            } else {
+                gameState.phase = 'place';
+            }
+        }
+
+        function renderBoard() {
+            const name1 = gameState.names[1] || "Host";
+            const name2 = gameState.names[2] || "Gast";
+
+            let p1DisplayCount = gameState.p1PiecesInHand > 0 ? gameState.p1PiecesInHand : gameState.p1OnBoard;
+            let p2DisplayCount = gameState.p2PiecesInHand > 0 ? gameState.p2PiecesInHand : gameState.p2OnBoard;
+
+            document.getElementById('p1-text').innerText = `${name1}: ${p1DisplayCount}`;
+            document.getElementById('p2-text').innerText = `${name2}: ${p2DisplayCount}`;
+
+            let phaseDesc = "Steine setzen";
+            if (gameState.winner) phaseDesc = "SPIEL BEENDET";
+            else if (gameState.phase === 'move') phaseDesc = "Steine ziehen";
+            else if (gameState.phase === 'fly') phaseDesc = "Flugphase!";
+            else if (gameState.phase === 'remove') phaseDesc = "STEIN SCHLAGEN!";
+            document.getElementById('game-phase-text').innerText = phaseDesc;
+
+            let turnText = "";
+            const restartBtn = document.getElementById('restart-btn');
+
+            if (gameState.winner) {
+                const winnerName = gameState.winner === 1 ? name1 : name2;
+                turnText = `🏆 Gewinner: ${winnerName}! 🎉`;
+                restartBtn.style.display = 'block';
+            } else {
+                restartBtn.style.display = 'none';
+                if (gameState.isMultiplayer) {
+                    if (gameState.turn === gameState.myPlayer) turnText = `🟢 DU bist am Zug!`;
+                    else turnText = `⏳ Gegner (${gameState.turn === 1 ? name1 : name2}) ist am Zug...`;
+                } else if (gameState.isVsAi) {
+                    if (gameState.turn === 1) turnText = `🟢 DU bist am Zug!`;
+                    else turnText = `🤖 Computer überlegt...`;
+                } else {
+                    turnText = `${gameState.turn === 1 ? name1 : name2} ist am Zug`;
+                }
+            }
+            document.getElementById('turn-indicator').innerText = turnText;
+
+            const svg = document.getElementById('board-svg');
+            svg.querySelectorAll('circle').forEach(el => el.remove());
+
+            points.forEach((pt, idx) => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', pt.x);
+                circle.setAttribute('cy', pt.y);
+                circle.setAttribute('r', '15');
+                
+                const occupant = gameState.board[idx];
+                if (occupant === null) {
+                    if (hoveredPointIdx === idx && !gameState.winner && (!gameState.isVsAi || gameState.turn === 1)) {
+                        circle.setAttribute('fill', 'rgba(255, 255, 255, 0.25)');
+                        circle.setAttribute('stroke', '#f39c12');
+                        circle.setAttribute('stroke-width', '2');
+                    } else {
+                        circle.setAttribute('fill', 'transparent');
+                        circle.setAttribute('stroke', 'transparent');
+                        circle.setAttribute('stroke-width', '0');
+                    }
+                    if (gameState.selectedPoint === idx) {
+                        circle.setAttribute('fill', 'rgba(243, 156, 18, 0.3)');
+                        circle.setAttribute('stroke', '#f39c12');
+                        circle.setAttribute('stroke-width', '3');
+                    }
+                } else {
+                    circle.setAttribute('fill', occupant === 1 ? '#111111' : '#ffffff');
+                    circle.setAttribute('stroke', occupant === 1 ? '#000000' : '#cccccc');
+                    circle.setAttribute('stroke-width', occupant === 1 ? '2' : '3');
+                    if (gameState.selectedPoint === idx) {
+                        circle.setAttribute('stroke', '#f39c12');
+                        circle.setAttribute('stroke-width', '4');
+                    }
+                }
+                svg.appendChild(circle);
+            });
+        }
+
+        function getEventPoint(event) {
+            const svg = document.getElementById('board-svg');
+            const rect = svg.getBoundingClientRect();
+            const scaleX = 400 / rect.width;
+            const scaleY = 400 / rect.height;
+            const x = (event.clientX - rect.left) * scaleX;
+            const y = (event.clientY - rect.top) * scaleY;
+
+            let clickedIdx = -1;
+            let minDistance = 25;
+            points.forEach((pt, idx) => {
+                const dist = Math.hypot(pt.x - x, pt.y - y);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    clickedIdx = idx;
+                }
+            });
+            return clickedIdx;
+        }
+
+        function handleBoardHover(event) {
+            if (gameState.winner || (gameState.isVsAi && gameState.turn === 2)) return;
+            const idx = getEventPoint(event);
+            if (hoveredPointIdx !== idx) {
+                hoveredPointIdx = idx;
+                renderBoard();
+            }
+        }
+
+        function clearHover() {
+            if (hoveredPointIdx !== -1) {
+                hoveredPointIdx = -1;
+                renderBoard();
+            }
+        }
+
+        function handleBoardClick(event) {
+            event.preventDefault();
+            if (gameState.winner) return;
+            if (gameState.isMultiplayer && gameState.turn !== gameState.myPlayer) return;
+            if (gameState.isVsAi && gameState.turn === 2) return;
+
+            const clickedIdx = getEventPoint(event);
+            if (clickedIdx !== -1) handlePointClick(clickedIdx);
+        }
+
+        function handlePointClick(idx) {
+            const occupant = gameState.board[idx];
+
+            if (gameState.phase === 'remove') {
+                const opp = gameState.turn === 1 ? 2 : 1;
+                if (occupant === opp) {
+                    if (isInMill(idx, opp) && !allInMill(opp)) {
+                        if (!gameState.isVsAi || gameState.turn === 1) alert('Dieser Stein ist Teil einer Mühle und geschützt!');
+                        return;
+                    }
+                    playSound('click');
+                    gameState.board[idx] = null;
+                    if (opp === 1) gameState.p1OnBoard--;
+                    else gameState.p2OnBoard--;
+
+                    if (checkWinCondition()) {
+                        playSound('dingdong');
+                        renderBoard();
+                        if (gameState.isMultiplayer) sendState();
+                        return;
+                    }
+
+                    gameState.turn = gameState.turn === 1 ? 2 : 1;
+                    updateGamePhase();
+                    renderBoard();
+                    if (gameState.isMultiplayer) sendState();
+                    else if (gameState.isVsAi) checkAiTurn();
+                }
+                return;
+            }
+
+            if (gameState.phase === 'place') {
+                if (occupant === null) {
+                    playSound('click');
+                    gameState.board[idx] = gameState.turn;
+                    if (gameState.turn === 1) {
+                        gameState.p1PiecesInHand--;
+                        gameState.p1OnBoard++;
+                    } else {
+                        gameState.p2PiecesInHand--;
+                        gameState.p2OnBoard++;
+                    }
+
+                    if (checkMill(idx, gameState.turn)) {
+                        playSound('glock');
+                        gameState.phase = 'remove';
+                    } else {
+                        gameState.turn = gameState.turn === 1 ? 2 : 1;
+                        updateGamePhase();
+                    }
+                    
+                    if (checkWinCondition()) playSound('dingdong');
+                    renderBoard();
+                    if (gameState.isMultiplayer) sendState();
+                    else if (gameState.isVsAi) checkAiTurn();
+                }
+            } 
+            else if (gameState.phase === 'move' || gameState.phase === 'fly') {
+                if (gameState.selectedPoint === null) {
+                    if (occupant === gameState.turn) {
+                        playSound('click');
+                        gameState.selectedPoint = idx;
+                        renderBoard();
+                    }
+                } else {
+                    if (occupant === null) {
+                        const isValid = gameState.phase === 'fly' || adjacencies[gameState.selectedPoint].includes(idx);
+                        if (isValid) {
+                            playSound('click');
+                            gameState.board[gameState.selectedPoint] = null;
+                            gameState.board[idx] = gameState.turn;
+                            gameState.selectedPoint = null;
+
+                            if (checkMill(idx, gameState.turn)) {
+                                playSound('glock');
+                                gameState.phase = 'remove';
+                            } else {
+                                gameState.turn = gameState.turn === 1 ? 2 : 1;
+                                updateGamePhase();
+                            }
+                            
+                            if (checkWinCondition()) playSound('dingdong');
+                            renderBoard();
+                            if (gameState.isMultiplayer) sendState();
+                            else if (gameState.isVsAi) checkAiTurn();
+                        } else {
+                            gameState.selectedPoint = null;
+                            renderBoard();
+                        }
+                    } else if (occupant === gameState.turn) {
+                        playSound('click');
+                        gameState.selectedPoint = idx;
+                        renderBoard();
+                    }
+                }
+            }
+        }
+
+        function checkAiTurn() {
+            if (gameState.winner || !gameState.isVsAi || gameState.turn !== 2) return;
+
+            setTimeout(() => {
+                if (gameState.phase === 'remove') {
+                    let p1Indices = gameState.board.map((val, idx) => val === 1 ? idx : null).filter(val => val !== null);
+                    let validTargets = p1Indices.filter(idx => !isInMill(idx, 1) || allInMill(1));
+                    if (validTargets.length === 0) validTargets = p1Indices;
+
+                    if (validTargets.length > 0) {
+                        let targetIdx = validTargets[Math.floor(Math.random() * validTargets.length)];
+                        playSound('click');
+                        gameState.board[targetIdx] = null;
+                        gameState.p1OnBoard--;
+
+                        if (checkWinCondition()) {
+                            playSound('dingdong');
+                            renderBoard();
+                            return;
+                        }
+
+                        gameState.turn = 1;
+                        updateGamePhase();
+                        renderBoard();
+                    }
+                } 
+                else if (gameState.phase === 'place') {
+                    let emptyIndices = gameState.board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+                    if (emptyIndices.length > 0) {
+                        let chosenIdx = -1;
+                        if (gameState.aiDifficulty === 'medium' || gameState.aiDifficulty === 'hard') {
+                            for (let idx of emptyIndices) {
+                                gameState.board[idx] = 2;
+                                if (checkMill(idx, 2)) {
+                                    chosenIdx = idx;
+                                    gameState.board[idx] = null;
+                                    break;
+                                }
+                                gameState.board[idx] = null;
+                            }
+                            if (chosenIdx === -1 && gameState.aiDifficulty === 'hard') {
+                                for (let idx of emptyIndices) {
+                                    gameState.board[idx] = 1;
+                                    if (checkMill(idx, 1)) {
+                                        chosenIdx = idx;
+                                        gameState.board[idx] = null;
+                                        break;
+                                    }
+                                    gameState.board[idx] = null;
+                                }
+                            }
+                        }
+                        if (chosenIdx === -1) chosenIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+
+                        playSound('click');
+                        gameState.board[chosenIdx] = 2;
+                        gameState.p2PiecesInHand--;
+                        gameState.p2OnBoard++;
+
+                        if (checkMill(chosenIdx, 2)) {
+                            playSound('glock');
+                            gameState.phase = 'remove';
+                            renderBoard();
+                            checkAiTurn();
+                            return;
+                        } else {
+                            gameState.turn = 1;
+                            updateGamePhase();
+                        }
+                        if (checkWinCondition()) playSound('dingdong');
+                        renderBoard();
+                    }
+                } 
+                else if (gameState.phase === 'move' || gameState.phase === 'fly') {
+                    let aiPieces = gameState.board.map((val, idx) => val === 2 ? idx : null).filter(val => val !== null);
+                    let validMoves = [];
+
+                    aiPieces.forEach(fromIdx => {
+                        let targets = gameState.phase === 'fly' ? 
+                            gameState.board.map((val, idx) => val === null ? idx : null).filter(val => val !== null) :
+                            adjacencies[fromIdx].filter(toIdx => gameState.board[toIdx] === null);
+
+                        targets.forEach(toIdx => validMoves.push({ from: fromIdx, to: toIdx }));
+                    });
+
+                    if (validMoves.length > 0) {
+                        let bestMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                        if (gameState.aiDifficulty === 'medium' || gameState.aiDifficulty === 'hard') {
+                            for (let move of validMoves) {
+                                gameState.board[move.from] = null;
+                                gameState.board[move.to] = 2;
+                                if (checkMill(move.to, 2)) {
+                                    bestMove = move;
+                                    gameState.board[move.from] = 2;
+                                    gameState.board[move.to] = null;
+                                    break;
+                                }
+                                gameState.board[move.from] = 2;
+                                gameState.board[move.to] = null;
+                            }
+                        }
+
+                        playSound('click');
+                        gameState.board[bestMove.from] = null;
+                        gameState.board[bestMove.to] = 2;
+
+                        if (checkMill(bestMove.to, 2)) {
+                            playSound('glock');
+                            gameState.phase = 'remove';
+                            renderBoard();
+                            checkAiTurn();
+                            return;
+                        } else {
+                            gameState.turn = 1;
+                            updateGamePhase();
+                        }
+                        if (checkWinCondition()) playSound('dingdong');
+                        renderBoard();
+                    }
+                }
+            }, 600);
+        }
+
+        function checkMill(idx, player) {
+            return mills.some(mill => mill.includes(idx) && mill.every(p => gameState.board[p] === player));
+        }
+
+        function isInMill(idx, player) {
+            return mills.some(mill => mill.includes(idx) && mill.every(p => gameState.board[p] === player));
+        }
+
+        function allInMill(player) {
+            const playerIndices = gameState.board.map((val, idx) => val === player ? idx : null).filter(val => val !== null);
+            return playerIndices.every(idx => isInMill(idx, player));
+        }
+
+        function checkWinCondition() {
+            if (gameState.p1PiecesInHand === 0 && gameState.p2PiecesInHand === 0) {
+                if (gameState.p1OnBoard < 3) { gameState.winner = 2; return true; }
+                if (gameState.p2OnBoard < 3) { gameState.winner = 1; return true; }
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>
