@@ -385,12 +385,12 @@
     <div id="screen-game" class="screen">
         <div class="status-bar">
             <div class="player-info">
-                <div class="mini-stone" id="p1-indicator" style="background: #000000; border: 1px solid #444;"></div>
+                <div class="mini-stone" id="p1-indicator" style="background: #111111;"></div>
                 <span id="p1-text">Host: 9</span>
             </div>
             <div id="game-phase-text" style="font-weight: bold; color: var(--accent-gold); font-size: 0.85rem;">Setzen</div>
             <div class="player-info">
-                <div class="mini-stone" id="p2-indicator" style="background: #ffffff; border: 1px solid #aaa;"></div>
+                <div class="mini-stone" id="p2-indicator" style="background: #ffffff;"></div>
                 <span id="p2-text">Gast: 9</span>
             </div>
         </div>
@@ -645,12 +645,10 @@
             bubbleTimeout = setTimeout(() => { bubble.style.opacity = '0'; }, 3500);
         }
 
-        // HIER WIRD DER LINK GENERIERT UND ANGEZEIGT
         function getInviteUrl() {
             const customCode = document.getElementById('host-room-input').value.trim();
             
-            // AUTOMATISCHE ERKENNUNG: Wenn du es auf GitHub Pages hochlädst, nimmt er automatisch die GitHub-URL.
-            // Falls du den Link auf GitHub manuell erzwingen willst, kannst du hier deine URL eintragen (z.B. "https://dein-name.github.io/repo/SW%20M%C3%BChle2.html")
+            // TRAGE HIER DEINE GITHUB-PAGES-URL EIN (z.B. "https://dein-benutzername.github.io/dein-repo/SW%20M%C3%BChle2.html")
             const githubPagesUrl = " https://swi64.github.io/SW-Muehle2/"; 
 
             let baseUrl = (githubPagesUrl.trim() !== "") ? githubPagesUrl : window.location.href.split('?')[0];
@@ -670,7 +668,6 @@
             peer.on('open', () => {
                 document.getElementById('host-status').innerText = `Raum bereit! Mitspieler kann beitreten.`;
                 
-                // Link anzeigen
                 const fullLink = getInviteUrl();
                 document.getElementById('generated-invite-link').value = fullLink;
                 document.getElementById('link-box-container').style.display = 'flex';
@@ -708,7 +705,7 @@
         function copyInviteLink() {
             const linkInput = document.getElementById('generated-invite-link');
             linkInput.select();
-            linkInput.setSelectionRange(0, 99999); // Für Smartphones
+            linkInput.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(linkInput.value).then(() => {
                 alert('Link in die Zwischenablage kopiert!');
             }).catch(err => {
@@ -839,12 +836,8 @@
             document.getElementById('p1-text').innerText = `${name1}: ${p1DisplayCount}`;
             document.getElementById('p2-text').innerText = `${name2}: ${p2DisplayCount}`;
 
-            // Mini-Indikatoren oben in der Statusbar feste Farben geben
-            document.getElementById('p1-indicator').style.background = '#2c1a0e';
-            document.getElementById('p1-indicator').style.border = '2px solid #f39c12';
-            
-            document.getElementById('p2-indicator').style.background = '#f0e6ff';
-            document.getElementById('p2-indicator').style.border = '2px solid #8b5a2b';
+            document.getElementById('p1-indicator').style.background = '#111111';
+            document.getElementById('p2-indicator').style.background = '#ffffff';
 
             let phaseDesc = "Steine setzen";
             if (gameState.winner) phaseDesc = "SPIEL BEENDET";
@@ -881,7 +874,7 @@
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', pt.x);
                 circle.setAttribute('cy', pt.y);
-                circle.setAttribute('r', '16'); // Etwas größer gemacht für bessere Touch-Bedienung auf dem Handy
+                circle.setAttribute('r', '16');
                 
                 const occupant = gameState.board[idx];
                 if (occupant === null) {
@@ -900,25 +893,24 @@
                         circle.setAttribute('stroke-width', '3');
                     }
                 } else {
-                    // Spieler 1 = Dunkler/Schwarzer Holzstein mit goldenem Rand, Spieler 2 = Heller Elfenbeinstein
+                    // Spieler 1 = Rein Schwarz, Spieler 2 = Rein Weiß (OHNE Rand / Stroke)
                     if (occupant === 1) {
-                        circle.setAttribute('fill', '#2c1a0e');
-                        circle.setAttribute('stroke', '#f39c12');
-                        circle.setAttribute('stroke-width', '3');
+                        circle.setAttribute('fill', '#111111');
+                        circle.setAttribute('stroke', 'none');
                     } else {
-                        circle.setAttribute('fill', '#f8f1e5');
-                        circle.setAttribute('stroke', '#5d4037');
-                        circle.setAttribute('stroke-width', '3');
+                        circle.setAttribute('fill', '#ffffff');
+                        circle.setAttribute('stroke', 'none');
                     }
 
+                    // Selektions- oder Markierungsring nur bei Auswahl
                     if (gameState.selectedPoint === idx) {
-                        circle.setAttribute('stroke', '#00ffcc'); // Leuchtender Selektionsring
-                        circle.setAttribute('stroke-width', '4');
+                        circle.setAttribute('stroke', '#f39c12');
+                        circle.setAttribute('stroke-width', '3');
                     }
                 }
                 svg.appendChild(circle);
             });
-         }
+        }
 
         function getEventPoint(event) {
             const svg = document.getElementById('board-svg');
