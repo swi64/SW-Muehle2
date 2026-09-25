@@ -839,6 +839,13 @@
             document.getElementById('p1-text').innerText = `${name1}: ${p1DisplayCount}`;
             document.getElementById('p2-text').innerText = `${name2}: ${p2DisplayCount}`;
 
+            // Mini-Indikatoren oben in der Statusbar feste Farben geben
+            document.getElementById('p1-indicator').style.background = '#2c1a0e';
+            document.getElementById('p1-indicator').style.border = '2px solid #f39c12';
+            
+            document.getElementById('p2-indicator').style.background = '#f0e6ff';
+            document.getElementById('p2-indicator').style.border = '2px solid #8b5a2b';
+
             let phaseDesc = "Steine setzen";
             if (gameState.winner) phaseDesc = "SPIEL BEENDET";
             else if (gameState.phase === 'move') phaseDesc = "Steine ziehen";
@@ -874,12 +881,12 @@
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', pt.x);
                 circle.setAttribute('cy', pt.y);
-                circle.setAttribute('r', '15');
+                circle.setAttribute('r', '16'); // Etwas größer gemacht für bessere Touch-Bedienung auf dem Handy
                 
                 const occupant = gameState.board[idx];
                 if (occupant === null) {
                     if (hoveredPointIdx === idx && !gameState.winner && (!gameState.isVsAi || gameState.turn === 1)) {
-                        circle.setAttribute('fill', 'rgba(255, 255, 255, 0.25)');
+                        circle.setAttribute('fill', 'rgba(243, 156, 18, 0.4)');
                         circle.setAttribute('stroke', '#f39c12');
                         circle.setAttribute('stroke-width', '2');
                     } else {
@@ -888,22 +895,30 @@
                         circle.setAttribute('stroke-width', '0');
                     }
                     if (gameState.selectedPoint === idx) {
-                        circle.setAttribute('fill', 'rgba(243, 156, 18, 0.3)');
+                        circle.setAttribute('fill', 'rgba(243, 156, 18, 0.5)');
                         circle.setAttribute('stroke', '#f39c12');
                         circle.setAttribute('stroke-width', '3');
                     }
                 } else {
-                    circle.setAttribute('fill', occupant === 1 ? '#111111' : '#ffffff');
-                    circle.setAttribute('stroke', occupant === 1 ? '#000000' : '#cccccc');
-                    circle.setAttribute('stroke-width', occupant === 1 ? '2' : '3');
-                    if (gameState.selectedPoint === idx) {
+                    // Spieler 1 = Dunkler/Schwarzer Holzstein mit goldenem Rand, Spieler 2 = Heller Elfenbeinstein
+                    if (occupant === 1) {
+                        circle.setAttribute('fill', '#2c1a0e');
                         circle.setAttribute('stroke', '#f39c12');
+                        circle.setAttribute('stroke-width', '3');
+                    } else {
+                        circle.setAttribute('fill', '#f8f1e5');
+                        circle.setAttribute('stroke', '#5d4037');
+                        circle.setAttribute('stroke-width', '3');
+                    }
+
+                    if (gameState.selectedPoint === idx) {
+                        circle.setAttribute('stroke', '#00ffcc'); // Leuchtender Selektionsring
                         circle.setAttribute('stroke-width', '4');
                     }
                 }
                 svg.appendChild(circle);
             });
-        }
+         }
 
         function getEventPoint(event) {
             const svg = document.getElementById('board-svg');
